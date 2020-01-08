@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 const { URL } = require("url");
-const { app } = require("electron");
+const { app, BrowserWindow } = require("electron");
 const { openWindow } = require("../utils/electron");
 
 const mySitesUrl = "https://www.wix.com/account/sites";
@@ -17,7 +17,6 @@ app.on("ready", async () => {
     } else if (url === mySitesUrl) {
       console.log(JSON.stringify({ event: "userAuthenticated" }));
       win.hide();
-
       win.webContents.session.cookies.get(
         { url: "http://wix.com", name: "wixSession2" },
         (error, cookies) => {
@@ -34,4 +33,18 @@ app.on("ready", async () => {
     }
   });
   win.loadURL(mySitesUrl);
+  win.webContents.on(
+    "new-window",
+    (event, url, frameName, disposition, options) => {
+      event.preventDefault();
+      const newWin = new BrowserWindow(options);
+      newWin.loadURL(url, {
+        // we override the userAgent to resolve a security erorr caused by a new Google Policy. To be removed once the isue is resovled
+        // https://support.google.com/accounts/thread/22873505?msgid=22873505
+        userAgent:
+          "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.10136"
+      });
+      event.newGuest = newWin;
+    }
+  );
 });
